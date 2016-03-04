@@ -1,20 +1,25 @@
 import simplejson as json
 
-class ConfigData:
-    def __init__(self, configFile):
+class ConfigData(object):
+    def __init__(self, configFile=None):
         self.dataMap = {}
+        if (configFile != None):
+            file = open(configFile, "r")
+            inputText = file.read()
+            # print inputText
+            loadedData = json.loads(inputText)
+            # print type(loadedData)
+            self.dataMap = loadedData
 
-        file = open(configFile, "r")
-        inputText = file.read()
-        # print inputText
-        loadedData = json.loads(inputText)
-        # print type(loadedData)
-        self.dataMap = loadedData
+        return self
 
     def getValue(self, key):
         if key in self.dataMap:
             return self.dataMap[key]
         return None
+
+    def setValue(self, key, value):
+        self.dataMap[key] = value
 
     def hasAttr(self,attr):
         if attr in self.dataMap:
