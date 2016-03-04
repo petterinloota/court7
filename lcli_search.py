@@ -2,7 +2,6 @@ from ldaptools.connect import ldapconn
 from hopetools.userdata import UserData
 from hopetools.formatdata import FormatData
 
-
 formatObj = FormatData(None)
 
 def reportResult(ld):
@@ -31,7 +30,7 @@ def reportResult(ld):
 
 print "Do LDAP - 1"
 
-ld = ldapconn(None)
+ld = ldapconn({'file': '/etc/hope/ldap.conf'})
 ld.doinit()
 
 ld.search("cn=first.last1")

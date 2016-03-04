@@ -5,8 +5,6 @@ import gear_file
 from gear_pkg.gpkg1 import gclass1
 import argparse
 
-argparse.
-
 print("The adventure with Python begins ... \n")
 
 def myfunc(x):
@@ -16,7 +14,6 @@ myfunc("test")
 
 list=["one", "two", "three"]
 dict={"one": "moi", "two": "pi", "three": "bei"}
-
 
 print "Try a simple list ---------------- "
 for y in list:
