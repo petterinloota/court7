@@ -1,25 +1,107 @@
 from hopetools.userdata import UserData
 import re
+import sys
+import types
 
-class EntryData:
-    def __init__(self):
-        self.dn = ''
-        self.attrList = []
+'''
+============================================================================
+Manager Object to Produce Data Objects
+============================================================================
+'''
+
+class EntryManager(object):
+
+    def __init__(self, conf):
+        self.configObj = conf
+        pass
+
+    def entryFactory(self):
+        return EntryData()
+
+    def newDN(self, user_type, entryObj):
+        ou = self.configObj.getUserOu(user_type)
+        rdnattr= self.configObj.getValue('rdnattr')
+        rdnvalue = entryObj.getSingleValue(rdnattr)
+        dn = rdnattr + "=" + rdnvalue + "," + ou
+        # print  "NEW DN: " + dn
+        return dn
+
+    def prepareUserEntry(self, dataObj):
+        # A dict to help build the "body" of the object
+        attrs = {}
+        attrs['objectclass'] = ['top','person','inetorgperson']
+
+        attrs['sn'] = dataObj.getSingle('sn')
+        attrs['givenname'] = dataObj.getSingle('givenname')
+        alias = dataObj.getSingle('givenname') + "." + dataObj.getSingle("sn")
+        alias = alias.lower()
+
+        # Build CN for the entry from givenname and sn ---
+        if dataObj.hasAttr('cn'):
+            attrs["cn"] = dataObj.getSingle("cn")
+        else:
+            attrs["cn"] = alias
+
+        if dataObj.hasAttr('userpassword'):
+            attrs["userpassword"] = dataObj.getSingle("userpassword")
+        else:
+            attrs["userpassword"] = 'Notset2016'
+
+        if dataObj.hasAttr('description'):
+            attrs["description"] = dataObj.getSingle("description")
+        else:
+            if dataObj.hasAttr('class'):
+                attrs["description"] = dataObj.getSingle("class")
+            else:
+                attrs["description"] = 'Inner circle'
+
+        if dataObj.hasAttr('mail'):
+            attrs["mail"] = dataObj.getSingle("mail")
+        else:
+            maildomain = self.configObj.getMailDomain(dataObj.getSingle('user_type'))
+            attrs["mail"] = alias + "@" + maildomain
+
+        print "ATTRS: ", attrs
+
+        return EntryData({'attrMap':attrs})
+
+'''
+============================================================================
+Actual Data Object
+============================================================================
+'''
+
+class EntryData(object):
+
+    def __init__(self, argMap={}):
+        # sys.stderr.write("Init Entry data ... result raw: \n")
+        # print resultData
+        # sys.stderr.write(resultData)
         self.valueMap = {}
-        self.suffix = "dc=ad7,dc=local"
-        self.usersOU = "ou=users,"+self.suffix
-        self.userSubOUMap = {}
-        self.userSubOUMap["staff"] = "ou=staff,"+self.usersOU
-        self.userSubOUMap["students"] = "ou=students,"+self.usersOU
+        self.attrList = []
+        self.dn = None
 
-    # resultData is now data as it is when returned by python-ldap search result operation
-    def __init__(self, resultData):
-        try:
-            self.dn = resultData[0][0]
-            self.valueMap = resultData[0][1]
+        if 'searchEntry' in argMap:
+            resultData = argMap['searchEntry']
+            try:
+                self.dn = resultData[0][0]
+                self.valueMap = resultData[0][1]
+                self.attrList = self.valueMap.keys()
+            except:
+                print "Error in Object Initialization ..."
+        elif 'attrMap' in argMap:
+            self.valueMap = {}
+            map = argMap['attrMap']
+
+            # In this data class, values of attributes are allways lists
+            for key in map:
+                if isinstance(map[key], types.ListType):
+                    self.valueMap[key] = map[key]
+                else:
+                    self.valueMap[key] = [map[key]]
             self.attrList = self.valueMap.keys()
-        except:
-            print "Error in Object Initialization ..."
+            if 'dn' in self.valueMap:
+                self.dn = self.valueMap['dn']
 
     def getSingleValue(self, attr):
         retVal = None
