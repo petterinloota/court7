@@ -1,5 +1,15 @@
 --------------------------------------------------------------------------
-The Basic idea for usage of this peace of code:
+Prerequisites
+--------------------------------------------------------------------------
+$ lsb_release -a
+Description:	Ubuntu 14.04.1 LTS
+$ python --version
+Python 2.7.6
+
+$ apt-get install python-ldap python-simplejson python-simplejson-doc
+
+--------------------------------------------------------------------------
+The Basic idea for usage of this utility
 --------------------------------------------------------------------------
 
 1) Check that the entry is not there - Student707

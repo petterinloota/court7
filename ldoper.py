@@ -8,7 +8,32 @@ from hopetools.formatdata import FormatData
 from hopetools.userdata import UserData
 from ldaptools.connect import ldapconn
 
+# ---------------------------------------------------------------
+
+description = """
+    A General tool to handle LDAP data: get report and add new entries (also to modify in future versions).
+    Baseline data format is JSON:
+    - reports generated,
+    - data used as input,
+    - configuration data.
+
+    JSON as both in and out format means the tool can be used for fetching data from LDAP A and then piping the same data in order to insert it into a second LDAP B etc.
+    """
+parser = argparse.ArgumentParser(description=description)
+parser.add_argument("-m", "--mode", default="report",  help="define the mode of operation: report, add ( ... yet to come: modify)")
+parser.add_argument("-s", "--search", default="objectclass=*",  help="define the search filter, default: objectclass=*")
+parser.add_argument("-b", "--base", default="",  help="define the LDAP search base DN")
+parser.add_argument("-f", "--file", default=None, help="file to read the input data from; optionally stdin can be used")
+parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
+parser.add_argument("-v", "--verbose", default=0, help="verbosity level - 0(default) or 1")
+
+# ---------------------------------------------------------------
+
 formatObj = FormatData(None)
+mapList=[]
+inputText = ""
+
+# ---------------------------------------------------------------
 
 def collectSearchResults(ld):
     result=ld.shiftResult()
@@ -16,21 +41,11 @@ def collectSearchResults(ld):
         formatObj.addDataObject(result.getUserDataObject())
         result=ld.shiftResult()
 
-parser = argparse.ArgumentParser(description='Slurp some JSON data and parse it into Python dictionary')
-parser.add_argument("-m", "--mode", default="report",  help="define the mode of operation: report, add, modify")
-parser.add_argument("-s", "--search", default="objectclass=*",  help="define the search filter")
-parser.add_argument("-b", "--base", default="",  help="define the LDAP search base dn")
-parser.add_argument("-f", "--file", default=None, help="file to read the input data from")
-parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
-parser.add_argument("-v", "--verbose", default=0, help="verbosity level - from 1 to 9")
-
-mapList=[]
-inputText = ""
+# ---------------------------------------------------------------
 
 args = parser.parse_args()
 mode = args.mode
 sys.stderr.write("Operation mode: " + mode + "\n")
-
 
 # ld = ldapconn(None)
 ld = ldapconn({'file': args.config})
