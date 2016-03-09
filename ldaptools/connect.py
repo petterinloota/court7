@@ -32,12 +32,26 @@ class ldapconn(object):
         except:
             print "Error in connection initialization. Host " + self.getConfValue("host")
 
-    def search(self, filter):
-        self.ldap_result_id = self.conn.search(self.getConfValue('basedn'), self.getConfValue('searchscope'),
+    def check_arg(self, key, argmap, default):
+        if key in argmap:
+            if argmap[key] != None and argmap[key] != '':
+                return argmap[key]
+
+        return default
+
+    def search(self, **kwargs):
+
+        filter = 'objectclass=*'
+        if 'filter' in kwargs:
+            filter = kwargs['filter']
+
+        base = self.check_arg('base', kwargs, self.getConfValue('basedn'))
+
+        self.ldap_result_id = self.conn.search(base, self.getConfValue('searchscope'),
                                                filter, self.getConfValue('retrieveAttributes'))
 
     def searchAll(self):
-        return self.search('objectclass=*')
+        return self.search(filter='objectclass=*')
 
     def shiftResult(self):
         retVal = None
@@ -55,21 +69,16 @@ class ldapconn(object):
 
         dataObj.printOut()
 
-        # Select BASE DN for the new entry ---
-        base = self.getConfValue('usersou');
-        user_ou = base
-
-        if dataObj.hasAttr("user_type"):
-            val = self.getConfValue('usersou' + dataObj.getSingle('user_type'))
-            if val != None:
-                user_ou = val + "," + base
-
         newEntry = self.entryManager.prepareUserEntry(dataObj)
         attrs = newEntry.valueMap
 
         # The dn of our new entry/object
+        user_type = dataObj.getSingle('user_type')
+        if user_type == None:
+            user_type = dataObj.getSingle('__user_type')
 
-        dn = self.entryManager.newDN(dataObj.getSingle('user_type'), newEntry)
+
+        dn = self.entryManager.newDN(user_type, newEntry)
         # dn="cn=" + attrs['cn'] +  "," + user_ou
 
         print "NEW  DN: " + dn

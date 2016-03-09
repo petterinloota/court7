@@ -20,9 +20,9 @@ description = """
     JSON as both in and out format means the tool can be used for fetching data from LDAP A and then piping the same data in order to insert it into a second LDAP B etc.
     """
 parser = argparse.ArgumentParser(description=description)
-parser.add_argument("-m", "--mode", default="report",  help="define the mode of operation: report, add ( ... yet to come: modify)")
+parser.add_argument("-m", "--mode", default="raw",  help="define the mode of operation: raw, report, add ( ... yet to come: modify)")
 parser.add_argument("-s", "--search", default="objectclass=*",  help="define the search filter, default: objectclass=*")
-parser.add_argument("-b", "--base", default="",  help="define the LDAP search base DN")
+parser.add_argument("-b", "--base", default=None,  help="define the LDAP search base DN")
 parser.add_argument("-f", "--file", default=None, help="file to read the input data from; optionally stdin can be used")
 parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
 parser.add_argument("-v", "--verbose", default=0, help="verbosity level - 0(default) or 1")
@@ -41,6 +41,19 @@ def collectSearchResults(ld):
         formatObj.addDataObject(result.getUserDataObject())
         result=ld.shiftResult()
 
+def printReport(ld):
+    result=ld.shiftResult()
+    while (result != None):
+        print  "----------------------------------"
+        print "DN: ", result.dn, "--- User Type: ", result.user_type
+        print  "----------------------------------"
+
+        # print result.valueMap
+        nice_list = ['cn', 'displayname', 'mail', 'sn', 'givenname', 'samaccountname', 'memberof']
+        for id in nice_list:
+            if id != None:
+                print id, ":", result.getValueList(id)
+        result=ld.shiftResult()
 # ---------------------------------------------------------------
 
 args = parser.parse_args()
@@ -76,12 +89,18 @@ if mode == 'add':
         except:
             print "ADD failed for ... ", qualMap
 
-elif mode == 'report':
+elif mode == 'raw':
     sys.stderr.write("LDAP search  using filter: " + args.search + "\n")
-    ld.search(args.search)
+    ld.search(filter=args.search, base=args.base)
     collectSearchResults(ld)
     # print formatObj.printOut()
     print formatObj.getJson()
+
+elif mode == 'report':
+    sys.stderr.write("LDAP search  using filter: " + args.search + "\n")
+    ld.search(filter=args.search, base=args.base)
+    printReport(ld)
+
 
 else:
     print "No mode defined ..."

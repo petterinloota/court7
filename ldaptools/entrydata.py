@@ -29,7 +29,7 @@ class EntryManager(object):
     def prepareUserEntry(self, dataObj):
         # A dict to help build the "body" of the object
         attrs = {}
-        attrs['objectclass'] = ['top','person','inetorgperson']
+        attrs['objectclass'] = ['top','person','inetorgperson', 'posixaccount']
 
         attrs['sn'] = dataObj.getSingle('sn')
         attrs['givenname'] = dataObj.getSingle('givenname')
@@ -42,10 +42,25 @@ class EntryManager(object):
         else:
             attrs["cn"] = alias
 
+        # Decide the RDN value according to config  and data input
+        # - force_rdn - can be used to force set a value to rdn attribute
+        # - overriden_rdn - config param can be used to calculate allways the rdn attribute value
+        rdnattr = self.configObj.getValue('rdnattr')
+        if rdnattr != None:
+            if dataObj.hasAttr('force_rdn'):
+                attrs[rdnattr] =  dataObj.getSingle(rdnattr)
+            elif self.configObj.getValue('override_rdn'):
+                attrs[rdnattr] = alias
+
         if dataObj.hasAttr('userpassword'):
             attrs["userpassword"] = dataObj.getSingle("userpassword")
         else:
             attrs["userpassword"] = 'Notset2016'
+
+        if dataObj.hasAttr('displayname'):
+            attrs["displayname"] = dataObj.getSingle("displayname")
+        else:
+            attrs["displayname"] = dataObj.getSingle('givenname') + " " + dataObj.getSingle("sn")
 
         if dataObj.hasAttr('description'):
             attrs["description"] = dataObj.getSingle("description")
@@ -60,6 +75,18 @@ class EntryManager(object):
         else:
             maildomain = self.configObj.getMailDomain(dataObj.getSingle('user_type'))
             attrs["mail"] = alias + "@" + maildomain
+
+        ok_attrlist = self.configObj.getValue('user_attrlist')
+        if ok_attrlist != None:
+            for a in ok_attrlist:
+                if dataObj.hasAttr(a):
+                    attrs[a] = dataObj.getSingle(a)
+
+        userattr_default_map = self.configObj.getValue('userattr_default_map')
+        if userattr_default_map != None:
+            for k,v in userattr_default_map.iteritems():
+                if k not in attrs:
+                    attrs[k] = v
 
         print "ATTRS: ", attrs
 
@@ -84,9 +111,32 @@ class EntryData(object):
         if 'searchEntry' in argMap:
             resultData = argMap['searchEntry']
             try:
+            #for i in [1]:
+                self.user_type = 'unknown'
                 self.dn = resultData[0][0]
-                self.valueMap = resultData[0][1]
+                self.valueMap = {}
+                for k, v in resultData[0][1].iteritems():
+                    self.valueMap[k.lower()] = v
+
+                # Try to recognize the user type - staff, student
+                type_check_list = []
+                for v in self.getValueList('memberof'):
+                    type_check_list.append(v)
+                type_check_list.append(self.dn)
+                for v in type_check_list:
+                    if re.search(r'(staff|teacher|itc|assist|director|principal|developm|finance|consult|librar|facili|human|resour|build|admin)', v, re.IGNORECASE):
+                        self.user_type = 'staff'
+                        break
+                    if self.user_type == 'unknown':
+                        if re.search(r'student|lab', v, re.IGNORECASE):
+                            self.user_type = 'student'
+
+                if self.user_type != 'unknown':
+                    #print "USER TYPE RECOGNIZED: ", self.user_type
+                    self.valueMap['__user_type'] = [self.user_type]
+
                 self.attrList = self.valueMap.keys()
+
             except:
                 print "Error in Object Initialization ..."
         elif 'attrMap' in argMap:
@@ -111,7 +161,7 @@ class EntryData(object):
         return retVal
 
     def getValueList(self, attr):
-        retVal = None
+        retVal = []
         if attr in self.valueMap.keys():
             retVal = self.valueMap[attr]
         return retVal
