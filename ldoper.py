@@ -7,6 +7,7 @@ from hopetools import jsontools as jtools
 from hopetools.formatdata import FormatData
 from hopetools.userdata import UserData
 from ldaptools.connect import ldapconn
+from hopetools.hopeglob import Global
 
 # ---------------------------------------------------------------
 
@@ -26,6 +27,7 @@ parser.add_argument("-b", "--base", default=None,  help="define the LDAP search 
 parser.add_argument("-f", "--file", default=None, help="file to read the input data from; optionally stdin can be used")
 parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
 parser.add_argument("-v", "--verbose", default=0, help="verbosity level - 0(default) or 1")
+parser.add_argument("-T", "--test", default=0, help="Test only (default) or 1")
 
 # ---------------------------------------------------------------
 
@@ -41,15 +43,19 @@ def collectSearchResults(ld):
         formatObj.addDataObject(result.getUserDataObject())
         result=ld.shiftResult()
 
-def printReport(ld):
+def printReport(ld, mode):
     result=ld.shiftResult()
     while (result != None):
         print  "----------------------------------"
         print "DN: ", result.dn, "--- User Type: ", result.user_type
         print  "----------------------------------"
 
+        nice_list = ['cn', 'displayname', 'mail', 'sn', 'givenname', 'samaccountname', 'memberof', 'userpassword']
+        nice_list = ['displayname', 'mail','samaccountname']
+        if mode == 'fullreport':
+            nice_list = result.attrList
+
         # print result.valueMap
-        nice_list = ['cn', 'displayname', 'mail', 'sn', 'givenname', 'samaccountname', 'memberof']
         for id in nice_list:
             if id != None:
                 print id, ":", result.getValueList(id)
@@ -58,7 +64,11 @@ def printReport(ld):
 
 args = parser.parse_args()
 mode = args.mode
+test = args.test
 sys.stderr.write("Operation mode: " + mode + "\n")
+if test:
+    sys.stderr.write("TESTING ONLY")
+    Global.testing(True)
 
 # ld = ldapconn(None)
 ld = ldapconn({'file': args.config})
@@ -96,10 +106,10 @@ elif mode == 'raw':
     # print formatObj.printOut()
     print formatObj.getJson()
 
-elif mode == 'report':
+elif mode == 'report' or mode == 'fullreport':
     sys.stderr.write("LDAP search  using filter: " + args.search + "\n")
     ld.search(filter=args.search, base=args.base)
-    printReport(ld)
+    printReport(ld, mode)
 
 
 else:

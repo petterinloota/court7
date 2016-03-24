@@ -9,6 +9,7 @@ from hopetools.config import ConfigData
 import types
 import sys
 from  .ldapconfig import LdapConfig
+from hopetools.hopeglob import Global as glo
 
 class ldapconn(object):
     def __init__(self, argmap=None):
@@ -86,8 +87,12 @@ class ldapconn(object):
         # Convert our dict to nice syntax for the add-function using modlist-module
         ldif = modlist.addModlist(attrs)
 
-        # Do the actual synchronous add-operation to the ldapserver
-        self.conn.add_s(dn,ldif)
+        if (glo.testing()):
+            glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
+        else:
+            glo.debugOut("ADD ENTRY ...")
+            # Do the actual synchronous add-operation to the ldapserver
+            self.conn.add_s(dn,ldif)
 
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()

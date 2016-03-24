@@ -28,19 +28,24 @@ class EntryManager(object):
 
     def prepareUserEntry(self, dataObj):
         # A dict to help build the "body" of the object
+        user_attr_list = ['givenname', 'sn', 'uidnumber','gidnumber', 'homedirectory']
         attrs = {}
         attrs['objectclass'] = ['top','person','inetorgperson', 'posixaccount']
 
-        attrs['sn'] = dataObj.getSingle('sn')
-        attrs['givenname'] = dataObj.getSingle('givenname')
+        for item in user_attr_list:
+            if dataObj.getSingle(item):
+                attrs[item] = dataObj.getSingle(item)
+
+        #attrs['sn'] = dataObj.getSingle('sn')
+        #attrs['givenname'] = dataObj.getSingle('givenname')
         alias = dataObj.getSingle('givenname') + "." + dataObj.getSingle("sn")
         alias = alias.lower()
 
         # Build CN for the entry from givenname and sn ---
-        if dataObj.hasAttr('cn'):
-            attrs["cn"] = dataObj.getSingle("cn")
+        if dataObj.hasAttr('cn') and not self.configObj.hasAttr('sambasiduserbase'):
+            uid_cn_value = dataObj.getSingle("cn")
         else:
-            attrs["cn"] = alias
+            uid_cn_value = alias
 
         # Decide the RDN value according to config  and data input
         # - force_rdn - can be used to force set a value to rdn attribute
@@ -87,6 +92,27 @@ class EntryManager(object):
             for k,v in userattr_default_map.iteritems():
                 if k not in attrs:
                     attrs[k] = v
+
+        attrs["cn"] = uid_cn_value
+        if self.configObj.getValue('sambasiduserbase'):
+            attrs['objectclass'].append('sambasamaccount')
+            attrs["uid"] = uid_cn_value
+            attrs["homedirectory"] = '/home/' + alias
+            if dataObj.getSingle('uidnumber'):
+                uidnumber = dataObj.getSingle('uidnumber')
+            else:
+                uidnumber = '7001'
+            attrs['uidnumber'] = uidnumber
+            attrs['gidnumber'] = '100'
+            attrs['loginshell'] = '/bin/bash'
+            sambasid = self.configObj.getValue('sambasiduserbase') + '-' + uidnumber
+            print "Samba SID: ", sambasid
+            attrs['sambaSID'] = sambasid
+            attrs['sambapwdlastset'] = '1458628195'
+            attrs['sambapasswordhistory'] = '0000000000000000000000000000000000000000000000000000000000000000'
+            attrs['sambaacctflags'] = '[U          ]'
+            attrs['sambantpassword'] = 'B3E331E65756DF5C0FA120F9A4CC793F'
+
 
         print "ATTRS: ", attrs
 
