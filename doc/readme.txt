@@ -25,7 +25,7 @@ LDAP search  using filter: sn=student707
 
 2) Use Existing Student999 as a template to add new entry for Student708:
 
-$> ./ldoper.py -m report -s sn=student999 | sed -e 's/999/707/g' | ./ldoper.py -m add
+$> ./ldoper.py -m raw -s sn=student999 | sed -e 's/999/707/g' | ./ldoper.py -m add
 
 Operation mode: add
 Operation mode: report
