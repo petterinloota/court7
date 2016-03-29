@@ -1,6 +1,6 @@
 import types
 
-class UserData:
+class UserData(object):
     def __init__(self, inputMap):
         self.qualifierList = ['dn', 'mail', 'cn', 'displayname', 'sn']
         self.dataMap = {}
