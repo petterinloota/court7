@@ -2,6 +2,8 @@
 
 import argparse
 import sys
+import re
+from distutils.util import grok_environment_error
 
 from hopetools import jsontools as jtools
 from hopetools.formatdata import FormatData
@@ -28,6 +30,7 @@ parser.add_argument("-f", "--file", default=None, help="file to read the input d
 parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
 parser.add_argument("-v", "--verbose", default=0, help="verbosity level - 0(default) or 1")
 parser.add_argument("-T", "--test", default=0, help="Test only (default) or 1")
+parser.add_argument("-o", "--options", default="", help="Options: [memberuid|posix_group]")
 
 # ---------------------------------------------------------------
 
@@ -37,10 +40,14 @@ inputText = ""
 
 # ---------------------------------------------------------------
 
-def collectSearchResults(ld):
+def collectSearchResults(ld, ld2, grp_p):
     result=ld.shiftResult()
     while (result != None):
-        formatObj.addDataObject(result.getUserDataObject())
+        data_obj = result.getUserDataObject()
+        if grp_p:
+            ld2.groupParse(data_obj)
+
+        formatObj.addDataObject(data_obj)
         result=ld.shiftResult()
 
 def printReport(ld, mode):
@@ -65,14 +72,31 @@ def printReport(ld, mode):
 args = parser.parse_args()
 mode = args.mode
 test = args.test
+options = args.options
+memberuid_parse = False
+group_operation = False
+
 sys.stderr.write("Operation mode: " + mode + "\n")
 if test:
     sys.stderr.write("TESTING ONLY")
     Global.testing(True)
 
 # ld = ldapconn(None)
+ld2 = ldapconn({'file': args.config})
+ld2.doinit()
+
+# ld = ldapconn(None)
 ld = ldapconn({'file': args.config})
 ld.doinit()
+
+
+if re.search('memberuid', options, re.IGNORECASE):
+    memberuid_parse = True
+    Global.debugOut("Parse Group member DN list to memberUid values")
+
+if re.search('group', options, re.IGNORECASE):
+    group_operation = True
+    Global.debugOut("Group Operation")
 
 if mode == 'add':
 
@@ -95,14 +119,20 @@ if mode == 'add':
             dataObj = UserData(item)
             qualMap = dataObj.getQualifierMap()
             print "Try to add to LDAP: ", qualMap
-            ld.addUser(dataObj)
+
+            if group_operation:
+                ld.addGroup(dataObj)
+            else:
+                ld.addUser(dataObj)
+
+
         except:
             print "ADD failed for ... ", qualMap
 
 elif mode == 'raw':
     sys.stderr.write("LDAP search  using filter: " + args.search + "\n")
     ld.search(filter=args.search, base=args.base)
-    collectSearchResults(ld)
+    collectSearchResults(ld, ld2, memberuid_parse)
     # print formatObj.printOut()
     print formatObj.getJson()
 
