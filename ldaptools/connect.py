@@ -8,6 +8,7 @@ from ldaptools.entrydata import EntryManager
 from hopetools.config import ConfigData
 import types
 import sys
+from ldapurl import LDAP_SCOPE_BASE
 from  .ldapconfig import LdapConfig
 from hopetools.hopeglob import Global as glo
 
@@ -66,6 +67,30 @@ class ldapconn(object):
 
         return retVal
 
+    def addGroup(self, dataObj):
+        dataObj.printOut()
+
+        newEntry = self.entryManager.prepareGroupEntry(dataObj)
+        attrs = newEntry.valueMap
+
+        dn = self.entryManager.newDN('group', newEntry)
+        # dn="cn=" + attrs['cn'] +  "," + user_ou
+
+        glo.debugOut("NEW DN: " + dn)
+
+        # Convert our dict to nice syntax for the add-function using modlist-module
+        ldif = modlist.addModlist(attrs)
+
+        if (glo.testing()):
+            glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
+        else:
+            glo.debugOut("ADD ENTRY ...")
+            # Do the actual synchronous add-operation to the ldapserver
+            self.conn.add_s(dn,ldif)
+
+        # Its nice to the server to disconnect and free resources when done
+        #l.unbind_s()
+
     def addUser(self,dataObj):
 
         dataObj.printOut()
@@ -82,7 +107,7 @@ class ldapconn(object):
         dn = self.entryManager.newDN(user_type, newEntry)
         # dn="cn=" + attrs['cn'] +  "," + user_ou
 
-        print "NEW  DN: " + dn
+        glo.debugOut("NEW DN: " + dn)
 
         # Convert our dict to nice syntax for the add-function using modlist-module
         ldif = modlist.addModlist(attrs)
@@ -96,3 +121,27 @@ class ldapconn(object):
 
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()
+
+    def findUidByDN(self, dn):
+        self.ldap_result_id = self.conn.search(dn, LDAP_SCOPE_BASE, 'objectclass=*')
+        entryObj = self.shiftResult()
+        uid = ''
+        if entryObj != None:
+            uid = entryObj.getSingleValue('uid')
+            if uid == None:
+                uid = entryObj.getSingleValue('samaccountname')
+        return uid
+
+
+    def findMemberUids(self, memberList):
+        uidList = []
+        for mem in memberList:
+            uid = self.findUidByDN(mem)
+            if len(uid) > 0:
+                uidList.append(uid)
+        return uidList
+
+    def groupParse(self, dataObj):
+        if (dataObj.hasAttr('member')):
+            uidList = self.findMemberUids(dataObj.getList('member'))
+            dataObj.setValue('memberuid', uidList)

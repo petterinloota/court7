@@ -2,6 +2,7 @@ from hopetools.userdata import UserData
 import re
 import sys
 import types
+from hopetools.hopeglob import Global as glo
 
 '''
 ============================================================================
@@ -19,12 +20,44 @@ class EntryManager(object):
         return EntryData()
 
     def newDN(self, user_type, entryObj):
-        ou = self.configObj.getUserOu(user_type)
+        if user_type == 'group':
+            ou = self.configObj.getValue('groupou')
+        else:
+            ou = self.configObj.getUserOu(user_type)
         rdnattr= self.configObj.getValue('rdnattr')
         rdnvalue = entryObj.getSingleValue(rdnattr)
         dn = rdnattr + "=" + rdnvalue + "," + ou
         # print  "NEW DN: " + dn
         return dn
+
+    def prepareGroupEntry(self, dataObj):
+
+        # A dict to help build the "body" of the object
+        user_attr_list = ['gidnumber', 'description', 'cn']
+        attrs = {}
+        attrs['objectclass'] = ['top','posixgroup']
+
+        for item in user_attr_list:
+            if dataObj.getSingle(item):
+                attrs[item] = dataObj.getSingle(item)
+
+        gidnumber = dataObj.getSingle('gidnumber')
+        memberattr = self.configObj.getValue('groupmemberattr')
+
+        glo.debugOut("Group member attribute: " + memberattr)
+
+        if dataObj.getList(memberattr):
+            attrs[memberattr] = dataObj.getList(memberattr)
+
+        if self.configObj.getValue('sambasidgroupbase'):
+            attrs['objectclass'].append('sambagroupmapping')
+            attrs['sambagrouptype'] = '4'
+            sambasid = self.configObj.getValue('sambasidgroupbase') + '-' + gidnumber
+            glo.debugOut("Samba SID: " + sambasid)
+            attrs['sambaSID'] = sambasid
+
+        return EntryData({'attrMap':attrs})
+
 
     def prepareUserEntry(self, dataObj):
         # A dict to help build the "body" of the object
@@ -117,6 +150,10 @@ class EntryManager(object):
         print "ATTRS: ", attrs
 
         return EntryData({'attrMap':attrs})
+
+
+
+
 
 '''
 ============================================================================
