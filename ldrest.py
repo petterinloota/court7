@@ -1,5 +1,7 @@
 import falcon
 import json
+from hopetools.hopeglob import Global
+from ldmain import LdoperMain
 
 class ThingsResource(object):
 
@@ -18,7 +20,7 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
 
     def analyze_input(self, raw_json):
 
-        valid_config_prm_list = ['mode', 'search', 'base', 'file', 'config', 'verbose', 'test', 'options']
+        prm_map = {'mode': 'raw', 'search': 'uid=*', 'base': None, 'config': '/etc/hope/ldap.conf', 'test': False, 'options': False}
 
         print raw_json
 
@@ -28,10 +30,29 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
         print "DATA: ", data
         print "CONFIG: ", config
 
+        for prm in prm_map.keys():
+            if prm in config:
+                prm_map[prm] = config[prm]
+
         #for item in raw_json:
          #   print item
           #  print item['id']
 
+        print "MODE: ", prm_map['mode']
+        print "SEARCH: ", prm_map['search']
+
+        ldoper = LdoperMain(mode=prm_map['mode'], search=prm_map['search'], config=prm_map['config'])
+        ldoper.configObj.printOut()
+
+        if prm_map.get('mode') == 'add':
+            result = ldoper.addByList(data)
+            print "RESULT: ", result
+            return result
+
+        formatObj = ldoper.fetch()
+        print "RESULT: ", formatObj.getJson(), "\n"
+
+        return formatObj.getJson()
 
     def on_get(self, req, resp):
         """Handles GET requests"""
@@ -53,14 +74,16 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
                 ex.message)
 
         try:
-            result_json = json.loads(raw_json, encoding='utf-8')
+            result_json = self.analyze_input(json.loads(raw_json, encoding='utf-8'))
+            # result_json = json.loads(raw_json, encoding='utf-8')
+
         except ValueError:
             raise falcon.HTTPError(falcon.HTTP_400,
                 'Malformed JSON',
                 'Could not decode the request body. The '
                 'JSON was incorrect.')
 
-        self.analyze_input(result_json)
+
 
         resp.status = falcon.HTTP_200
         resp.set_header('Access-Control-Allow-Origin', '*')

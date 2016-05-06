@@ -6,9 +6,6 @@ class GenericData(object):
 
         if inputMap != None:
             for attr in inputMap.keys():
-                #print "value for " + attr
-                #print inputMap[attr]
-                #print ""
                 list = []
                 if (isinstance(inputMap[attr], types.ListType)):
                     list = inputMap[attr]
@@ -45,8 +42,10 @@ class GenericData(object):
 
     def printOut(self):
         for attr in self.dataMap.keys():
-            print "   " + attr + ": " + ",".join(self.getList(attr))
-
+            if isinstance(self.getList(attr), types.ListType):
+                print "   " , attr , ": " , self.getList(attr)
+            else:
+                print "   " , attr , ": ???"
 
 
 
