@@ -51,7 +51,7 @@ class EntryManager(object):
 
         if self.configObj.getValue('sambasidgroupbase'):
             attrs['objectclass'].append('sambagroupmapping')
-            attrs['sambagrouptype'] = '4'
+            attrs['sambagrouptype'] = '2'
             sambasid = self.configObj.getValue('sambasidgroupbase') + '-' + gidnumber
             glo.debugOut("Samba SID: " + sambasid)
             attrs['sambaSID'] = sambasid
@@ -60,10 +60,14 @@ class EntryManager(object):
 
 
     def prepareUserEntry(self, dataObj):
-        # A dict to help build the "body" of the object
-        user_attr_list = ['givenname', 'sn', 'uidnumber','gidnumber', 'homedirectory']
         attrs = {}
         attrs['objectclass'] = ['top','person','inetorgperson', 'posixaccount']
+        user_attr_list = ['givenname', 'sn', 'uidnumber','gidnumber', 'homedirectory']
+
+        obj_list = self.configObj.getValue('user_objlist')
+        if obj_list != None:
+        # if isinstance(obj_list, types.ListType):
+            attrs['objectclass'] = obj_list
 
         for item in user_attr_list:
             if dataObj.getSingle(item):

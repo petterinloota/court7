@@ -6,7 +6,12 @@ Description:	Ubuntu 14.04.1 LTS
 $ python --version
 Python 2.7.6
 
+LDAP handling:
 $ apt-get install python-ldap python-simplejson python-simplejson-doc
+
+For Falcon based REST server:
+$ apt-get install python-falcon uwsgi uwsgi-plugin-python
+
 
 --------------------------------------------------------------------------
 The Basic idea for usage of this utility
@@ -54,4 +59,17 @@ LDAP search  using filter: sn=student707
 [{"cn": ["test.student707"], "userpassword": ["Notset2016"], "user_type": ["student"], "sn": ["Student707"], "mail": ["test.student707@students.example.com"], "givenname": ["Test"], "description": ["xx"]}]
 
 ... now the new entry was found
+
+
+--------------------------------------------------------------------------
+REST server ----------------
+
+root@smxdc1:/media/sf_smxdc1/PycharmProjects/court7# python main.py 
+Serving on 127.0.0.1:8000
+
+Test:
+
+root@smxdc1:# curl http://localhost:8000/things
+[{"id": 1, "name": "Thingie"}, {"id": 2, "name": "Thinger"}]
+
 
