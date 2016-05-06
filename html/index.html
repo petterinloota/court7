@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Display IP Address</title>
+
+  <script>
+    var theText1 = document.createTextNode('PLACEHOLDER');
+    var theText2 = document.createTextNode('PLACEHOLDER');
+    var room = document.createElement('P');
+    var inputText = document.createElement('textarea');
+    var cnt = 0;
+
+	function addStuff() { 
+	  document.getElementById('cont1').appendChild(theText1);
+	  document.getElementById('cont1').appendChild(room);
+	  document.getElementById('cont1').appendChild(theText2);
+	  document.getElementById('input1').appendChild(inputText);
+	}
+
+	function postComplete() {
+	  cnt++;
+	  function processRequest(e) {
+	     var val1= "";
+	     var val2= "";
+	     if (xhr.readyState == 4) {
+	       if ( xhr.status == 200 ) {
+		 val1 = xhr.responseText;
+		 val2 = "JSON ...";
+		 var text = "POST response ... \n";
+		 text = text + "\n - RAW: \n" + xhr.responseText;
+		 text = text + "\n - INPUT: \n" + inputText.value;
+		 val2 = text;
+	       } else if (xhr.status == 400) {
+		 val1 = xhr.responseText;
+		 val2 = "400 ERROR";
+	       } else {
+		 val1 = xhr.status;
+		 val2 = "ERROR";
+	       }
+	       if (cnt%2) {
+		 val1 = "CLEARED ... ";
+		 val2 = "CLEARED ... ";
+	       }
+	       theText1.nodeValue = val1;
+	       theText2.nodeValue = val2;
+	     }
+	  }
+
+  	var xhr = new XMLHttpRequest();
+	var url;
+	url = "http://localhost:8000/things";
+	xhr.open('POST', url, true);
+	xhr.onreadystatechange = processRequest;
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xhr.send(inputText.value);
+	}
+
+	function complete() {
+	  cnt++;
+	  function processRequest(e) {
+	     var val1 = "";
+	     var val2 = "JSON...";
+	     if (xhr.readyState == 4 && xhr.status == 200 ) {
+		val1 = xhr.responseText;
+		if (cnt%2) {
+		  theText1.nodeValue = val1;
+		} else {
+		  theText1.nodeValue = "CLEARED ... ";
+		  theText2.nodeValue = "CLEARED ... ";
+		}
+      		var response = JSON.parse(xhr.responseText);
+		var name1 = response[0].name;
+		var id2 = response[1].id;
+		var text = "ALERT ... \n";
+		text = text + "\n - status: " + xhr.status;
+		text = text + "\n - JSON name1: " + name1;
+		text = text + "\n - JSON id2:   " + id2;
+		text = text + "\n - RAW: \n" + xhr.responseText;
+		text = text + "\n - INPUT: \n" + inputText.value;
+		val2 = text;
+		if (cnt%2) {
+		  theText2.nodeValue = val2;
+		} 
+		// alert(text);
+		
+	     }
+	  }
+
+  	var xhr = new XMLHttpRequest();
+	var url;
+	url = "http://localhost:8000/things";
+	xhr.open('GET', url, true);
+	xhr.onreadystatechange = processRequest;
+	xhr.send();
+	// alert("GET sent");
+	}
+  </script>
+</head>
+
+<body>
+
+<p id="begin"> REST client </p>
+<p id="input1">  </p>
+<p id="cont1">  </p>
+
+<script>
+	addStuff();
+</script>
+
+<button onclick="complete()"> GET Request </button>
+
+<button onclick="postComplete()"> POST Request </button>
+
+</body>
+
+</html>
+
+
+

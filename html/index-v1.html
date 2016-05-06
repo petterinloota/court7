@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Display IP Address</title>
+</head>
+<head>
+Access-Control-Allow-Origin: *
+</head>
+
+<body>
+
+<p> REST client </p>
+
+<form>
+
+<button> foo </button>
+
+</form>
+
+  <script>
+  	var xhr = new XMLHttpRequest();
+	var url;
+	url = "http://localhost:8000/things";
+	url = "http://ipinfo.io/json";
+	url = "http://smxdc1:8000/things";
+	url = "http://127.0.0.1:8000/things";
+	url = "http://localhost:8000/things";
+
+	xhr.open('GET', url, true);
+	xhr.send();
+	xhr.onreadystatechange = processRequest;
+	 
+	function processRequest(e) {
+	     if (xhr.readyState == 4 && xhr.status == 200 ) {
+      		var response = JSON.parse(xhr.responseText);
+		var name1 = response[0].name;
+		var id2 = response[1].id;
+		var text = "ALERT ... \n";
+		text = text + "\n - status: " + xhr.status;
+		text = text + "\n - JSON name1: " + name1;
+		text = text + "\n - JSON id2:   " + id2;
+		text = text + "\n - RAW: \n" + xhr.responseText;
+		alert(text);
+	      }
+	  
+	}
+
+  </script>
+</body>
+
+</html>
