@@ -1,6 +1,6 @@
-import simplejson as json
-import types
 import sys
+import simplejson as json
+
 
 class JsonData:
     def __init__(self,inputText):
@@ -12,7 +12,7 @@ class JsonData:
         try:
             loadedData = json.loads(inputText)
             # print "the text was JSON OK", type(loadedData)
-            if isinstance(loadedData, types.DictType):
+            if isinstance(loadedData, dict):
                 self.mapList.append(loadedData)
             else:
                 self.mapList = loadedData
@@ -31,9 +31,9 @@ class JsonData:
 
     def printOut():
         for item in self.mapList:
-            print item.keys()
+            print (item.keys())
             if "cn" in item.keys():
-                print "CN:" + item["cn"]
+                print ("CN:" + item["cn"])
 
     def getMapList(self):
         #return []

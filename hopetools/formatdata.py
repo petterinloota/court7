@@ -23,4 +23,4 @@ class FormatData:
         return self.json
 
     def printOut(self):
-        print self.list
+        print (self.list)

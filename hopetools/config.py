@@ -27,7 +27,7 @@ class ConfigData(object):
         return False
 
     def printOut(self):
-        print self.dataMap
+        print (self.dataMap)
 
 
 

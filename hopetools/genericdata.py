@@ -1,4 +1,4 @@
-import types
+
 
 class GenericData(object):
     def __init__(self, inputMap):
@@ -6,12 +6,12 @@ class GenericData(object):
 
         if inputMap != None:
             for attr in inputMap.keys():
-                list = []
-                if (isinstance(inputMap[attr], types.ListType)):
-                    list = inputMap[attr]
+                myList = []
+                if (isinstance(inputMap[attr], list)):
+                    myList = inputMap[attr]
                 else:
-                    list.append(inputMap[attr])
-                self.dataMap[attr] = list
+                    myList.append(inputMap[attr])
+                self.dataMap[attr] = myList
 
     def getSingle(self, attr):
         if attr in self.dataMap:
@@ -33,19 +33,19 @@ class GenericData(object):
         return False
 
     def setValue(self, attr, value):
-        list = []
-        if (isinstance(value, types.ListType)):
-            list = value
+        myList = []
+        if (isinstance(value, list)):
+            myList = value
         else:
-            list.append(value)
-        self.dataMap[attr] = list
+            myList.append(value)
+        self.dataMap[attr] = myList
 
     def printOut(self):
         for attr in self.dataMap.keys():
-            if isinstance(self.getList(attr), types.ListType):
-                print "   " , attr , ": " , self.getList(attr)
+            if isinstance(self.getList(attr), list):
+                print ("   " + attr + ": " , self.getList(attr))
             else:
-                print "   " , attr , ": ???"
+                print ("   " + attr + ": ???")
 
 
 
