@@ -9,7 +9,7 @@ class UserData(GenericData):
 
     def getQualifierMap(self):
         for best in self.qualifierList:
-            print "BEST: ", best
+            # print ("BEST: "+ best)
             if self.hasAttr(best):
                 return {best: self.getSingle(best)}
         return {'n/a': 'n/a'}
