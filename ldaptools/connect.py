@@ -1,16 +1,21 @@
-import ldap
-from ldapurl import LDAP_SCOPE_SUBTREE
+import ldap3
+# from ldapurl import LDAP_SCOPE_SUBTREE
 from .entrydata import EntryData # I suppose you can use the DOT here ... means the module is in the same package?
 # from pycurl import E_LDAP_SEARCH_FAILED, E_LDAP_INVALID_URL
-import ldap.modlist as modlist
+
 import ldaptools.entrydata
 from ldaptools.entrydata import EntryManager
 from hopetools.config import ConfigData
 import types
 import sys
-from ldapurl import LDAP_SCOPE_BASE
+# from ldapurl import LDAP_SCOPE_BASE
+
 from  .ldapconfig import LdapConfig
 from hopetools.hopeglob import Global as glo
+
+SEARCH_SCOPE_BASE_OBJECT = 0
+SEARCH_SCOPE_SINGLE_LEVEL = 1
+SEARCH_SCOPE_WHOLE_SUBTREE = 2
 
 class ldapconn(object):
     def __init__(self, argmap=None):
@@ -28,11 +33,16 @@ class ldapconn(object):
     def doinit(self):
         try:
             #self.conn = ldap.open(self.host)
-            self.conn = ldap.initialize('ldap://'+self.getConfValue('host')+':389')
-            self.conn.simple_bind(self.getConfValue('binddn'),self.getConfValue('bindpw'))
+
+            #OLD - self.conn = ldap.initialize('ldap://'+self.getConfValue('host')+':389')
+            #OLD - self.conn.simple_bind(self.getConfValue('binddn'),self.getConfValue('bindpw'))
+
+            self.conn = ldap3.Connection(ldap3.Server(self.getConfValue('host'),port=389),
+                user = self.getConfValue('binddn'),password = self.getConfValue('bindpw'),auto_bind=True)
+            # print ('LDAP CONN: ', self.conn)
 
         except:
-            print "Error in connection initialization. Host " + self.getConfValue("host")
+            print ("Error in connection initialization. Host " + self.getConfValue("host"))
 
     def check_arg(self, key, argmap, default):
         if key in argmap:
@@ -42,28 +52,33 @@ class ldapconn(object):
         return default
 
     def search(self, **kwargs):
-
-        filter = 'objectclass=*'
+        filter = '(objectclass=*)'
         if 'filter' in kwargs:
             filter = kwargs['filter']
+        # print('FILTER: ', filter)
 
         base = self.check_arg('base', kwargs, self.getConfValue('basedn'))
 
-        self.ldap_result_id = self.conn.search(base, self.getConfValue('searchscope'),
-                                               filter, self.getConfValue('retrieveAttributes'))
+        myAttrs = self.getConfValue('retrieveAttributes')
+        if myAttrs == None:
+            myAttrs = '*'
+
+        self.conn.search(base, filter, self.getConfValue('searchscope'), attributes=myAttrs)
+        self.response = self.conn.response
 
     def searchAll(self):
-        return self.search(filter='objectclass=*')
+        return self.search(filter='(objectclass=*)')
 
     def shiftResult(self):
-        retVal = None
-        result_type, result_data = self.conn.result(self.ldap_result_id, 0)
 
-        # print "RESULT TYPE: ", result_type
+        if (len(self.response) > 0 ):
+            entry =  self.response.pop()
+        else:
+            return None
 
-        if result_type == 100:
-            if (result_data != []):
-                retVal = EntryData({'searchEntry': result_data}) # Instantiate general LDAP Entry Data object
+        # print('ENTRY: ', entry['dn'], entry['attributes'])
+
+        retVal = EntryData({'attrMap': entry['attributes'], 'dn': entry['dn']}) # Instantiate general LDAP Entry Data object
 
         return retVal
 
@@ -87,6 +102,7 @@ class ldapconn(object):
             glo.debugOut("ADD ENTRY ...")
             # Do the actual synchronous add-operation to the ldapserver
             self.conn.add_s(dn,ldif)
+            self.conn.add_s()
 
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()
@@ -110,20 +126,34 @@ class ldapconn(object):
         glo.debugOut("NEW DN: " + dn)
 
         # Convert our dict to nice syntax for the add-function using modlist-module
-        ldif = modlist.addModlist(attrs)
+        # OLD -  ldif = modlist.addModlist(attrs)
+
+        objList = newEntry.getValueList('objectclass')
+        attrMap = newEntry.valueMap
+        #attrMap['objectclass'] = None
+
+        if 'objectclass' in attrMap: del attrMap['objectclass']
 
         if (glo.testing()):
             glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
         else:
             glo.debugOut("ADD ENTRY ...")
             # Do the actual synchronous add-operation to the ldapserver
-            self.conn.add_s(dn,ldif)
+
+
+            # OLD - self.conn.add_s(dn,ldif)
+
+
+
+            self.conn.add(dn, object_class=objList, attributes=attrMap)
+
+            print ('ADD RESULT: ', self.conn.result)
 
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()
 
     def findUidByDN(self, dn):
-        self.ldap_result_id = self.conn.search(dn, LDAP_SCOPE_BASE, 'objectclass=*')
+        self.ldap_result_id = self.conn.search(dn, SEARCH_SCOPE_BASE_OBJECT, 'objectclass=*')
         entryObj = self.shiftResult()
         uid = ''
         if entryObj != None:

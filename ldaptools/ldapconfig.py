@@ -1,13 +1,14 @@
-from hopetools.config import ConfigData
-from ldapurl import LDAP_SCOPE_SUBTREE
-import types
-import sys
-from hopetools.config import ConfigData
 
+# from ldapurl import LDAP_SCOPE_SUBTREE
+
+from hopetools.config import ConfigData
+from ldap3 import SEARCH_SCOPE_WHOLE_SUBTREE
 class LdapConfig(ConfigData):
     def __init__(self, arg):
         super(LdapConfig,self).__init__(arg)
-        self.setValue('searchscope', LDAP_SCOPE_SUBTREE)
+
+        # OLD -  self.setValue('searchscope', LDAP_SCOPE_SUBTREE)
+        self.setValue('searchscope', SEARCH_SCOPE_WHOLE_SUBTREE)
         self.setValue('retrieveAttributes', None)
 
     def getMailDomain(self, user_type):

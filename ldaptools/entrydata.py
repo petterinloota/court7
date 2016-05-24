@@ -1,7 +1,5 @@
 from hopetools.userdata import UserData
 import re
-import sys
-import types
 from hopetools.hopeglob import Global as glo
 
 '''
@@ -66,7 +64,7 @@ class EntryManager(object):
 
         obj_list = self.configObj.getValue('user_objlist')
         if obj_list != None:
-        # if isinstance(obj_list, types.ListType):
+        # if isinstance(obj_list, list):
             attrs['objectclass'] = obj_list
 
         for item in user_attr_list:
@@ -143,7 +141,7 @@ class EntryManager(object):
             attrs['gidnumber'] = '100'
             attrs['loginshell'] = '/bin/bash'
             sambasid = self.configObj.getValue('sambasiduserbase') + '-' + uidnumber
-            print "Samba SID: ", sambasid
+            print ("Samba SID: "+  sambasid)
             attrs['sambaSID'] = sambasid
             attrs['sambapwdlastset'] = '1458628195'
             attrs['sambapasswordhistory'] = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -151,7 +149,7 @@ class EntryManager(object):
             attrs['sambantpassword'] = 'B3E331E65756DF5C0FA120F9A4CC793F'
 
 
-        print "ATTRS: ", attrs
+        print ("ATTRS: ", attrs)
 
         return EntryData({'attrMap':attrs})
 
@@ -167,10 +165,29 @@ Actual Data Object
 
 class EntryData(object):
 
+    def recognizeType(self):
+        self.user_type = 'unknown'
+        # Try to recognize the user type - staff, student
+        type_check_list = []
+        for v in self.getValueList('memberof'):
+            type_check_list.append(v)
+        if self.dn != None:
+            type_check_list.append(self.dn)
+
+        for v in type_check_list:
+            if re.search(r'(staff|teacher|itc|assist|director|principal|developm|finance|consult|librar|facili|human|resour|build|admin)', v, re.IGNORECASE):
+                self.user_type = 'staff'
+                break
+            if self.user_type == 'unknown':
+                if re.search(r'student|lab', v, re.IGNORECASE):
+                    self.user_type = 'student'
+
+        if self.user_type != 'unknown':
+            #print "USER TYPE RECOGNIZED: ", self.user_type
+            self.valueMap['__user_type'] = [self.user_type]
+
+
     def __init__(self, argMap={}):
-        # sys.stderr.write("Init Entry data ... result raw: \n")
-        # print resultData
-        # sys.stderr.write(resultData)
         self.valueMap = {}
         self.attrList = []
         self.dn = None
@@ -178,47 +195,32 @@ class EntryData(object):
         if 'searchEntry' in argMap:
             resultData = argMap['searchEntry']
             try:
-            #for i in [1]:
-                self.user_type = 'unknown'
                 self.dn = resultData[0][0]
                 self.valueMap = {}
                 for k, v in resultData[0][1].iteritems():
                     self.valueMap[k.lower()] = v
-
-                # Try to recognize the user type - staff, student
-                type_check_list = []
-                for v in self.getValueList('memberof'):
-                    type_check_list.append(v)
-                type_check_list.append(self.dn)
-                for v in type_check_list:
-                    if re.search(r'(staff|teacher|itc|assist|director|principal|developm|finance|consult|librar|facili|human|resour|build|admin)', v, re.IGNORECASE):
-                        self.user_type = 'staff'
-                        break
-                    if self.user_type == 'unknown':
-                        if re.search(r'student|lab', v, re.IGNORECASE):
-                            self.user_type = 'student'
-
-                if self.user_type != 'unknown':
-                    #print "USER TYPE RECOGNIZED: ", self.user_type
-                    self.valueMap['__user_type'] = [self.user_type]
-
-                self.attrList = self.valueMap.keys()
-
             except:
-                print "Error in Object Initialization ..."
-        elif 'attrMap' in argMap:
+                print ("Error in Object Initialization ...")
+
+        if 'attrMap' in argMap:
             self.valueMap = {}
             map = argMap['attrMap']
 
             # In this data class, values of attributes are allways lists
             for key in map:
-                if isinstance(map[key], types.ListType):
+                if isinstance(map[key], list):
                     self.valueMap[key] = map[key]
                 else:
                     self.valueMap[key] = [map[key]]
             self.attrList = self.valueMap.keys()
             if 'dn' in self.valueMap:
                 self.dn = self.valueMap['dn']
+
+        if 'dn' in argMap:
+            self.dn = argMap['dn']
+
+        self.attrList = self.valueMap.keys()
+        self.recognizeType()
 
     def getSingleValue(self, attr):
         retVal = None
