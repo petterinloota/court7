@@ -7,11 +7,15 @@ $ python --version
 Python 2.7.6
 
 LDAP handling:
+
+For Python2 --------
 $ apt-get install python-ldap python-simplejson python-simplejson-doc
+
+For Python3 ---------
+$ apt-get install python3-ldap3 pythom3-simplejson
 
 For Falcon based REST server:
 $ apt-get install python-falcon uwsgi uwsgi-plugin-python
-
 
 --------------------------------------------------------------------------
 The Basic idea for usage of this utility
