@@ -58,7 +58,7 @@ class LdoperMain(object):
             try:
                 dataObj = UserData(item)
                 qualMap = dataObj.getQualifierMap()
-                print "Try to add to LDAP: ", qualMap
+                print ("Try to add to LDAP: ", qualMap)
 
                 if self.configObj.getSingle('group_operation'):
                     self.ld.addGroup(dataObj)
@@ -79,8 +79,8 @@ class LdoperMain(object):
         return self.addByJson(jtools.JsonData(inputText))
 
     def deb(self):
-        print self.configObj.getAttrList()
-        print self.configObj.printOut()
+        print (self.configObj.getAttrList())
+        print (self.configObj.printOut())
 
     def collectSearchResults(self):
         result=self.ld.shiftResult()

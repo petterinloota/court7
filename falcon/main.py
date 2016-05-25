@@ -8,7 +8,7 @@ from wsgiref import simple_server
 class Things:
     def on_get(self, req, res):
         res.status = falcon.HTTP_200
-	res.set_header('Access-Control-Allow-Origin', '*')
+        res.set_header('Access-Control-Allow-Origin', '*')
         res.body = json.dumps([{"id": 1, "name": "Thingie"}, {"id": 2, "name": "Thinger"}])
 
 
@@ -35,5 +35,5 @@ if __name__ == "__main__":
     host = "0.0.0.0"
     port = 8000
     httpd = simple_server.make_server(host, port, app)
-    print "Serving on %s:%s" % (host, port)
+    print("Serving on %s:%s" % (host, port))
     httpd.serve_forever()

@@ -20,15 +20,15 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
 
     def analyze_input(self, raw_json):
 
-        prm_map = {'mode': 'raw', 'search': 'uid=*', 'base': None, 'config': '/etc/hope/ldap.conf', 'test': False, 'options': False}
+        prm_map = {'mode': 'raw', 'search': '(cn=*)', 'base': None, 'config': '/etc/hope/ldap.conf', 'test': False, 'options': False}
 
-        print raw_json
+        print(raw_json)
 
         config = raw_json['config']
         data = raw_json['data']
 
-        print "DATA: ", data
-        print "CONFIG: ", config
+        print("DATA: ", data)
+        print ("CONFIG: ", config)
 
         for prm in prm_map.keys():
             if prm in config:
@@ -38,43 +38,44 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
          #   print item
           #  print item['id']
 
-        print "MODE: ", prm_map['mode']
-        print "SEARCH: ", prm_map['search']
+        print ("MODE: ", prm_map['mode'])
+        print ("SEARCH: ", prm_map['search'])
 
         ldoper = LdoperMain(mode=prm_map['mode'], search=prm_map['search'], config=prm_map['config'])
         ldoper.configObj.printOut()
 
         if prm_map.get('mode') == 'add':
             result = ldoper.addByList(data)
-            print "RESULT: ", result
+            print ("RESULT: ", result)
             return result
 
         formatObj = ldoper.fetch()
-        print "RESULT: ", formatObj.getJson(), "\n"
+        print ("RESULT: ", formatObj.getJson(), "\n")
 
         return formatObj.getJson()
 
     def on_get(self, req, resp):
         """Handles GET requests"""
-        print "GET Query:", req.url
+        print ("GET Query:", req.url)
         resp.status = falcon.HTTP_200
         resp.set_header('Access-Control-Allow-Origin', '*')
         resp.body = 'Hello world!'
 
     def on_post(self, req, resp):
         """Handles POST requests"""
-        print "POST Query:", req.url
+        print ("POST Query:", req.url)
         # falcon.Request.url
         try:
             raw_json = req.stream.read()
-            print "POST RAW: ", raw_json
+            print ("POST RAW: ", raw_json)
         except Exception as ex:
             raise falcon.HTTPError(falcon.HTTP_400,
                 'Error',
                 ex.message)
 
         try:
-            result_json = self.analyze_input(json.loads(raw_json, encoding='utf-8'))
+            print('TYPE of data: ', type(raw_json))
+            result_json = self.analyze_input(json.loads(raw_json.decode("utf-8"), encoding='utf-8'))
             # result_json = json.loads(raw_json, encoding='utf-8')
 
         except ValueError:
@@ -87,7 +88,8 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
 
         resp.status = falcon.HTTP_200
         resp.set_header('Access-Control-Allow-Origin', '*')
-        resp.body = json.dumps(result_json, encoding='utf-8')
+        resp.body = json.dumps(result_json)
+        # resp.body = json.dumps(result_json.encode('utf-8'), encoding='utf-8')
 
 # falcon.API instances are callable WSGI apps
 app = api = falcon.API()

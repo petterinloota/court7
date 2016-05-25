@@ -68,12 +68,55 @@ LDAP search  using filter: sn=student707
 --------------------------------------------------------------------------
 REST server ----------------
 
+$ apt-get intall python-falcon
+$ apt-get intall python3-falcon
+
 root@smxdc1:/media/sf_smxdc1/PycharmProjects/court7# python main.py 
 Serving on 127.0.0.1:8000
+
+---
 
 Test:
 
 root@smxdc1:# curl http://localhost:8000/things
 [{"id": 1, "name": "Thingie"}, {"id": 2, "name": "Thinger"}]
+
+----
+
+gunicorn ldrest:app
+
+  475  curl -i -X POST http://localhost:8000/ldoper -d '{"config": {"oper":"search"},"data":[{"id": 1,
+"name": "Thingie"}, {"id": 2, "name": "Thinger"}]}'
+
+-----------------------------------------
+With python3, have to use the python3 gunicorn:
+... http://docs.gunicorn.org/en/stable/install.html
+
+$ apt-get install pip3
+$ pip3 install gunicorn
+
+Now  latest python3 aware gunicorn is in /usr/local/bin/gunicorn
+... the apt-get gunicorn wants python2
+
+-----------------------------------------
+Start server:
+
+root@smxdc1:~/PycharmProjects/court7# /usr/local/bin/gunicorn ldrest:app
+
+-----------------------------------------
+Be client:
+
+root@smxdc1:~/PycharmProjects/court7# curl -i -X POST http://localhost:8000/ldoper -d '{"config": {"search":"(cn=test.staff213)"},"data":[]}'
+HTTP/1.1 200 OK
+Server: gunicorn/19.6.0
+Date: Wed, 25 May 2016 03:53:52 GMT
+Connection: close
+Access-Control-Allow-Origin: *
+Content-Length: 323
+Content-Type: application/json; charset=utf-8
+
+"[{\"givenname\": [\"Test\"], \"user_type\": [\"staff\"], \"cn\": [\"test.staff213\"], \"displayname\": [\"Test Staff213\"], \"sn\": [\"Staff213\"], \"mail\": [\"test.staff213@hope.edu.kh\"], \"userpassword\": [\"Hope1234\"], \"__user_type\": [\"staff\"], \"description\": [\"HOPE circle\"], \"uid\": [\"test.staff213\"]}]"root@smxdc1:~/PycharmProjects/court7# 
+
+
 
 
