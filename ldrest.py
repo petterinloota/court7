@@ -1,3 +1,5 @@
+from _ast import Global
+
 import falcon
 import json
 from hopetools.hopeglob import Global
@@ -38,8 +40,15 @@ parser.add_argument("-o", "--options", default="", help="Options: [memberuid|pos
          #   print item
           #  print item['id']
 
+        # Set TEST mode on, if test parameter has any value ...
+        if 'test' in config:
+            Global.testing(True)
+        else:
+            Global.testing(False)
+
         print ("MODE: ", prm_map['mode'])
         print ("SEARCH: ", prm_map['search'])
+        print ("TEST: ",  Global.testing())
 
         ldoper = LdoperMain(mode=prm_map['mode'], search=prm_map['search'], config=prm_map['config'])
         ldoper.configObj.printOut()

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+</head>
+
+
+<body>
+
+    <table>
+    <tr>
+        <td>
+            <p>Input JSON:<br />
+                <textarea id="injson1" cols="80" rows="7">{"config": {"search":"(cn=test.staff211)"},"data":[]}</textarea> </p>
+        </td>
+        <td> <button onclick="RestPost('injson1', 'resjson1', 'dbg1')"> REST call</button> </td>
+        <td>
+            <p>Result JSON:<br />
+                <textarea id="resjson1" cols="80" rows="7">HERE WILL BE THE 1ST RESULT</textarea>
+                <textarea id="dbg1" cols="80" rows="2">... some debug info ...</textarea>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>Input JSON:<br />
+                <textarea id="injson2" cols="80" rows="7">{"config": {"search":"(cn=test.staff213)"},"data":[]}</textarea> </p>
+        </td>
+        <td> <button onclick="RestPost('injson2', 'resjson2', 'dbg2')"> REST call</button> </td>
+        </td>
+        <td>
+            <p>Result JSON:<br />
+                <textarea id="resjson2" cols="80" rows="7">HERE WILL BE THE 2ND RESULT</textarea>
+                <textarea id="dbg2" cols="80" rows="2">... some debug info ...</textarea>
+            </p>
+        </td>
+    </tr>
+
+
+
+    </table>
+
+    <script>
+        var injson1 = document.getElementById('injson1');
+        var injson2 = document.getElementById('injson2');
+        var resjson1 = document.getElementById('resjson1');
+        var resjson2 = document.getElementById('resjson2');
+        var resjson3 = document.getElementById('resjson3');
+        var dbg1 = document.getElementById('dbg1');
+        var dbg2 = document.getElementById('dbg2');
+
+        function doRequest() {
+            resjson1.innerHTML = Date();
+        }
+        function doRequest2() {
+            resjson1.innerHTML = document.getElementById('injson').value;
+        }
+
+        function RestPost(inelm, reselm, dbgelm) {
+            var inobj = document.getElementById(inelm);
+            var resobj = document.getElementById(reselm);
+            var dbgobj = document.getElementById(dbgelm);
+
+            var postMessage = inobj.value; //injson1.value;
+
+            dbgobj.innerHTML = "MSG: " + inobj.value;
+
+
+            function processRequest(e) {
+                var resText = "";
+                // resText = "MSG SENT: " + postMessage + "\n";
+                 var error = "";
+
+                 if (xhr.readyState == 4) {
+                   if ( xhr.status == 200 ) {
+                    resText = resText + xhr.responseText;
+                   } else if (xhr.status == 400) {
+                     error = "400 ERROR";
+                   } else {
+                     error = "ERROR " + xhr.status;
+                     // resText = resText + "Error: " + error + "\n";
+                     resText = resText + xhr.responseText;
+                   }
+                 }
+
+                resobj.innerHTML = resText;
+                // resjson1.innerHTML = resText;
+             }
+
+
+
+  	        var xhr = new XMLHttpRequest();
+	        var url;
+            url = "http://localhost:8000/ldoper";
+            xhr.open('POST', url, true);
+            xhr.onreadystatechange = processRequest;
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhr.send(postMessage);
+	}
+
+
+
+    </script>
+</body>
+</html>

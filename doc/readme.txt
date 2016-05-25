@@ -99,14 +99,21 @@ Now  latest python3 aware gunicorn is in /usr/local/bin/gunicorn
 ... the apt-get gunicorn wants python2
 
 -----------------------------------------
-Start server:
+Start server (now Python 3):
 
 root@smxdc1:~/PycharmProjects/court7# /usr/local/bin/gunicorn ldrest:app
 
------------------------------------------
-Be client:
+[2016-05-25 15:05:57 +0700] [8607] [INFO] Starting gunicorn 19.6.0
+[2016-05-25 15:05:57 +0700] [8607] [INFO] Listening at: http://127.0.0.1:8000 (8607)
+[2016-05-25 15:05:57 +0700] [8607] [INFO] Using worker: sync
+[2016-05-25 15:05:57 +0700] [8610] [INFO] Booting worker with pid: 8610
+...
 
-root@smxdc1:~/PycharmProjects/court7# curl -i -X POST http://localhost:8000/ldoper -d '{"config": {"search":"(cn=test.staff213)"},"data":[]}'
+-----------------------------------------
+Be client (do search, implicit mode is "raw", search filter set by "search"-paramter; data has now significance):
+
+.../court7# curl -i -X POST http://localhost:8000/ldoper -d '{"config": {"search":"(cn=test.staff213)"},"data":[]}'
+
 HTTP/1.1 200 OK
 Server: gunicorn/19.6.0
 Date: Wed, 25 May 2016 03:53:52 GMT
@@ -115,8 +122,12 @@ Access-Control-Allow-Origin: *
 Content-Length: 323
 Content-Type: application/json; charset=utf-8
 
-"[{\"givenname\": [\"Test\"], \"user_type\": [\"staff\"], \"cn\": [\"test.staff213\"], \"displayname\": [\"Test Staff213\"], \"sn\": [\"Staff213\"], \"mail\": [\"test.staff213@hope.edu.kh\"], \"userpassword\": [\"Hope1234\"], \"__user_type\": [\"staff\"], \"description\": [\"HOPE circle\"], \"uid\": [\"test.staff213\"]}]"root@smxdc1:~/PycharmProjects/court7# 
+"[{\"givenname\": [\"Test\"], \"user_type\": [\"staff\"], \"cn\": [\"test.staff213\"], \"displayname\": [\"Test Staff213\"], \"sn\": [\"Staff213\"], \"mail\": [\"test.staff213@hope.edu.kh\"], \"userpassword\": [\"Hope1234\"], \"__user_type\": [\"staff\"], \"description\": [\"HOPE circle\"], \"uid\": [\"test.staff213\"]}]"
 
+---------------------
+How to add a user via REST:
+(... to test only (dry run), add parameter to config section:  "test": "1")
 
-
+curl -i -X POST http://localhost:8000/ldoper -d \
+''{"config": {"mode":"add"},"data":[{"displayname": ["Test Staff214"], "description": ["HOPE circle"], "sn": ["Staff214"], "user_type": ["staff"], "userpassword": ["Hope1234"], "mail": ["test.staff214@hope.edu.kh"], "cn": ["test.staff214"], "givenname": ["Test"], "uid": ["test.staff214"]}]}''
 
