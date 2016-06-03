@@ -124,7 +124,9 @@ class EntryManager(object):
 
         userattr_default_map = self.configObj.getValue('userattr_default_map')
         if userattr_default_map != None:
-            for k,v in userattr_default_map.iteritems():
+            print (type(userattr_default_map))
+            print (userattr_default_map)
+            for k,v in userattr_default_map.items():
                 if k not in attrs:
                     attrs[k] = v
 
@@ -197,7 +199,7 @@ class EntryData(object):
             try:
                 self.dn = resultData[0][0]
                 self.valueMap = {}
-                for k, v in resultData[0][1].iteritems():
+                for k, v in resultData[0][1].items():
                     self.valueMap[k.lower()] = v
             except:
                 print ("Error in Object Initialization ...")
