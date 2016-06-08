@@ -124,8 +124,6 @@ class EntryManager(object):
 
         userattr_default_map = self.configObj.getValue('userattr_default_map')
         if userattr_default_map != None:
-            print (type(userattr_default_map))
-            print (userattr_default_map)
             for k,v in userattr_default_map.items():
                 if k not in attrs:
                     attrs[k] = v

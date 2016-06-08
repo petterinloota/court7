@@ -11,6 +11,11 @@ class LdapConfig(ConfigData):
         self.setValue('searchscope', SEARCH_SCOPE_WHOLE_SUBTREE)
         self.setValue('retrieveAttributes', None)
 
+        if self.getValue('searchbase') == None:
+            self.setValue('searchbase', self.getValue('basedn'))
+
+
+
     def getMailDomain(self, user_type):
         if self.hasAttr('maildomainmap'):
             map = self.getValue('maildomainmap')

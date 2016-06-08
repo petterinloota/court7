@@ -115,12 +115,9 @@ if mode == 'add':
 
     for item in mapList:
         qualMap = {}
-
-
-
         dataObj = UserData(item)
         qualMap = dataObj.getQualifierMap()
-        print ("Try to add to LDAP: ", qualMap)
+        # print ("Try to add to LDAP: ", qualMap)
 
         try:
             pass
@@ -131,7 +128,6 @@ if mode == 'add':
             ld.addGroup(dataObj)
         else:
             ld.addUser(dataObj)
-
 
         #except:
         #    print ("ADD failed for ... ", qualMap)

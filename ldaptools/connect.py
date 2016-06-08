@@ -57,7 +57,8 @@ class ldapconn(object):
             filter = kwargs['filter']
         # print('FILTER: ', filter)
 
-        base = self.check_arg('base', kwargs, self.getConfValue('basedn'))
+        base = self.check_arg('base', kwargs, self.getConfValue('searchbase'))
+        # print("Base: ",base)
 
         myAttrs = self.getConfValue('retrieveAttributes')
         if myAttrs == None:
@@ -76,11 +77,15 @@ class ldapconn(object):
         else:
             return None
 
-        # print('ENTRY: ', entry['dn'], entry['attributes'])
+        if 'dn' in entry:
+            # print('ENTRY: ', entry['dn'], entry['attributes'])
+            # print("DN: ", entry['dn'])
 
-        retVal = EntryData({'attrMap': entry['attributes'], 'dn': entry['dn']}) # Instantiate general LDAP Entry Data object
+            retVal = EntryData({'attrMap': entry['attributes'], 'dn': entry['dn']}) # Instantiate general LDAP Entry Data object
 
-        return retVal
+            return retVal
+
+        return None
 
     def addGroup(self, dataObj):
         dataObj.printOut()
@@ -107,9 +112,24 @@ class ldapconn(object):
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()
 
+    def dnIfExists(self, newEntry):
+        # Search for the entry to find out if it already exists ...
+        search_attr = self.getConfValue('rdnattr')
+        search_val = newEntry.getSingleValue(search_attr)
+        search_filter = "(" + search_attr + "=" + search_val + ")"
+        glo.debugOut("Check Exists FILTER: "+ search_filter)
+
+        self.search(filter=search_filter)
+
+        entryObj = self.shiftResult()
+        if entryObj != None:
+            return entryObj.dn
+
+        return None
+
     def addUser(self,dataObj):
 
-        dataObj.printOut()
+        # dataObj.printOut()
 
         newEntry = self.entryManager.prepareUserEntry(dataObj)
         attrs = newEntry.valueMap
@@ -134,23 +154,22 @@ class ldapconn(object):
 
         if 'objectclass' in attrMap: del attrMap['objectclass']
 
-        if (glo.testing()):
-            glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
+        dn_exists = self.dnIfExists(newEntry)
+
+        if dn_exists:
+            glo.debugOut("EXISTS already: " + dn)
         else:
-            glo.debugOut("ADD ENTRY ...")
-            # Do the actual synchronous add-operation to the ldapserver
+            if (glo.testing()):
+                glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
+            else:
+                glo.debugOut("ADD ENTRY ...")
+                # Do the actual synchronous add-operation to the ldapserver
+                self.conn.add(dn, object_class=objList, attributes=attrMap)
 
+                print ('ADD RESULT: ', self.conn.result)
 
-            # OLD - self.conn.add_s(dn,ldif)
-
-
-
-            self.conn.add(dn, object_class=objList, attributes=attrMap)
-
-            print ('ADD RESULT: ', self.conn.result)
-
-        # Its nice to the server to disconnect and free resources when done
-        #l.unbind_s()
+            # Its nice to the server to disconnect and free resources when done
+            #l.unbind_s()
 
     def findUidByDN(self, dn):
         self.ldap_result_id = self.conn.search(dn, SEARCH_SCOPE_BASE_OBJECT, 'objectclass=*')
