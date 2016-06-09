@@ -30,7 +30,7 @@ parser.add_argument("-f", "--file", default=None, help="file to read the input d
 parser.add_argument("-c", "--config", default='/etc/hope/ldap.conf', help="file to read the LDAP configuratin from")
 parser.add_argument("-v", "--verbose", default=0, help="verbosity level - 0(default) or 1")
 parser.add_argument("-T", "--test", default=0, help="Test only (default) or 1")
-parser.add_argument("-o", "--options", default="", help="Options: [memberuid|posix_group]")
+parser.add_argument("-o", "--options", default="", help="Options: [memberuid|posix_group|ad_group]")
 
 # ---------------------------------------------------------------
 
@@ -52,7 +52,9 @@ def collectSearchResults(ld, ld2, grp_p):
 
 def printReport(ld, mode):
     result=ld.shiftResult()
+    cnt = 0
     while (result != None):
+        cnt += 1
         print  ("----------------------------------")
         print ("DN: " + result.dn + "--- User Type: " + result.user_type)
         print  ("----------------------------------")
@@ -62,11 +64,13 @@ def printReport(ld, mode):
         if mode == 'fullreport':
             nice_list = result.attrList
 
+        obj = result.getUserDataObject();
         # print result.valueMap
         for id in nice_list:
             if id != None:
-                print (id + ":", result.getValueList(id))
+                print (id + ":", obj.getList(id))
         result=ld.shiftResult()
+    print("\nFound altogether: ",cnt)
 # ---------------------------------------------------------------
 
 args = parser.parse_args()
@@ -75,6 +79,7 @@ test = args.test
 options = args.options
 memberuid_parse = False
 group_operation = False
+ad_group_operation = False
 
 sys.stderr.write("Operation mode: " + mode + "\n")
 if test:
@@ -97,6 +102,10 @@ if re.search('memberuid', options, re.IGNORECASE):
 if re.search('group', options, re.IGNORECASE):
     group_operation = True
     Global.debugOut("Group Operation")
+
+if re.search('ad_group', options, re.IGNORECASE):
+    ad_group_operation = True
+    Global.debugOut("AD Group Operation")
 
 if mode == 'add':
 
@@ -124,7 +133,9 @@ if mode == 'add':
         except:
             print ("ADD failed for ... ", qualMap)
 
-        if group_operation:
+        if ad_group_operation:
+            ld.addAdGroup(dataObj)
+        elif group_operation:
             ld.addGroup(dataObj)
         else:
             ld.addUser(dataObj)

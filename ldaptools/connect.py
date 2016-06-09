@@ -1,3 +1,4 @@
+import re
 import ldap3
 # from ldapurl import LDAP_SCOPE_SUBTREE
 from .entrydata import EntryData # I suppose you can use the DOT here ... means the module is in the same package?
@@ -112,12 +113,69 @@ class ldapconn(object):
         # Its nice to the server to disconnect and free resources when done
         #l.unbind_s()
 
+    def addAdGroup(self,dataObj):
+
+        # glo.debugOut("ADD AD GROUP !!!")
+
+        dataObj.printOut()
+
+        newEntry = self.entryManager.prepareGroupEntry(dataObj)
+        attrs = newEntry.valueMap
+
+        dn = self.entryManager.newDN('group', newEntry)
+        # dn="cn=" + attrs['cn'] +  "," + user_ou
+
+        glo.debugOut("NEW DN: " + dn)
+
+        # Convert our dict to nice syntax for the add-function using modlist-module
+        # OLD -  ldif = modlist.addModlist(attrs)
+
+        objList = newEntry.getValueList('objectclass')
+        attrMap = newEntry.valueMap
+
+        if 'objectclass' in attrMap: del attrMap['objectclass']
+
+        # glo.debugOut("Group TYPE: " + self.getConfValue('grouptype'))
+        dnList = []
+        if re.search('ad', self.getConfValue('grouptype'), re.IGNORECASE):
+            memberList = dataObj.getList('memberuid')
+            # print("Member LIST: ",memberList)
+            if len(memberList) > 0:
+                dnList = self.findMemberDnList(memberList)
+                # print("Members: ", dnList)
+
+            if len(dnList) > 0:
+                attrMap['member'] = dnList
+            else:
+                if 'member' in attrMap: del attrMap['member']
+
+            if 'memberuid' in attrMap: del attrMap['memberuid']
+
+
+        dn_exists = self.dnIfExists(newEntry)
+
+        if dn_exists:
+            glo.debugOut("EXISTS already: " + dn)
+        else:
+            if (glo.testing()):
+                glo.debugOut("ADD LDAP ENTRY - TESTING ONLY ...")
+            else:
+                glo.debugOut("ADD ENTRY ...")
+                # Do the actual synchronous add-operation to the ldapserver
+                self.conn.add(dn, object_class=objList, attributes=attrMap)
+
+                print ('ADD RESULT: ', self.conn.result)
+
+            # Its nice to the server to disconnect and free resources when done
+            #l.unbind_s()
+
+
     def dnIfExists(self, newEntry):
         # Search for the entry to find out if it already exists ...
         search_attr = self.getConfValue('rdnattr')
         search_val = newEntry.getSingleValue(search_attr)
         search_filter = "(" + search_attr + "=" + search_val + ")"
-        glo.debugOut("Check Exists FILTER: "+ search_filter)
+        # glo.debugOut("Check Exists FILTER: "+ search_filter)
 
         self.search(filter=search_filter)
 
@@ -126,6 +184,8 @@ class ldapconn(object):
             return entryObj.dn
 
         return None
+
+
 
     def addUser(self,dataObj):
 
@@ -138,7 +198,6 @@ class ldapconn(object):
         user_type = dataObj.getSingle('user_type')
         if user_type == None:
             user_type = dataObj.getSingle('__user_type')
-
 
         dn = self.entryManager.newDN(user_type, newEntry)
         # dn="cn=" + attrs['cn'] +  "," + user_ou
@@ -172,23 +231,47 @@ class ldapconn(object):
             #l.unbind_s()
 
     def findUidByDN(self, dn):
-        self.ldap_result_id = self.conn.search(dn, SEARCH_SCOPE_BASE_OBJECT, 'objectclass=*')
+        # glo.debugOut("findUidByDN: "+dn)
+        self.ldap_result_id = self.conn.search(dn, '(objectclass=*)', SEARCH_SCOPE_BASE_OBJECT, attributes=['uid', 'samaccountname', 'cn'])
+        self.response = self.conn.response
+
         entryObj = self.shiftResult()
         uid = ''
         if entryObj != None:
-            uid = entryObj.getSingleValue('uid')
+            uid = entryObj.getUserDataObject().getSingle('uid')
             if uid == None:
-                uid = entryObj.getSingleValue('samaccountname')
+                uid = entryObj.getUserDataObject().getSingle('samaccountname')
         return uid
 
+    def findDNByUId(self, uid):
+        # glo.debugOut("findDNByUId: "+uid)
+        self.ldap_result_id = self.conn.search(self.getConfValue('searchbase'),"(samaccountname="+uid+")", SEARCH_SCOPE_WHOLE_SUBTREE, attributes=['uid', 'samaccountname', 'cn'])
+        self.response = self.conn.response
+
+        entryObj = self.shiftResult()
+        dn = ''
+        if entryObj != None:
+            dn = entryObj.dn
+
+        return dn
 
     def findMemberUids(self, memberList):
         uidList = []
         for mem in memberList:
             uid = self.findUidByDN(mem)
+            # glo.debugOut("UID found: "+uid)
             if len(uid) > 0:
                 uidList.append(uid)
         return uidList
+
+    def findMemberDnList(self, memberList):
+        dnList = []
+        for mem in memberList:
+            dn = self.findDNByUId(mem)
+            # glo.debugOut("DN found: " + dn)
+            if len(dn) > 0:
+                dnList.append(dn)
+        return dnList
 
     def groupParse(self, dataObj):
         if (dataObj.hasAttr('member')):

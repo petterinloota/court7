@@ -25,7 +25,7 @@ class EntryManager(object):
         rdnattr= self.configObj.getValue('rdnattr')
         rdnvalue = entryObj.getSingleValue(rdnattr)
         dn = rdnattr + "=" + rdnvalue + "," + ou
-        # print  "NEW DN: " + dn
+        # print  ("newDN - NEW DN: " + dn)
         return dn
 
     def prepareGroupEntry(self, dataObj):
@@ -34,6 +34,11 @@ class EntryManager(object):
         user_attr_list = ['gidnumber', 'description', 'cn']
         attrs = {}
         attrs['objectclass'] = ['top','posixgroup']
+
+        if self.configObj.getValue('grouptype') == 'ad':
+            attrs['objectclass'] = ['group']
+        if self.configObj.getValue('grouptype') == 'samba-ad':
+            attrs['objectclass'] = ['group', 'posixaccount']
 
         for item in user_attr_list:
             if dataObj.getSingle(item):
@@ -46,6 +51,12 @@ class EntryManager(object):
 
         if dataObj.getList(memberattr):
             attrs[memberattr] = dataObj.getList(memberattr)
+
+        attr_default_map = self.configObj.getValue('groupattr_default_map')
+        if attr_default_map != None:
+            for k,v in attr_default_map.items():
+                if k not in attrs:
+                    attrs[k] = v
 
         if self.configObj.getValue('sambasidgroupbase'):
             attrs['objectclass'].append('sambagroupmapping')
@@ -73,8 +84,14 @@ class EntryManager(object):
 
         #attrs['sn'] = dataObj.getSingle('sn')
         #attrs['givenname'] = dataObj.getSingle('givenname')
-        alias = dataObj.getSingle('givenname') + "." + dataObj.getSingle("sn")
-        alias = alias.lower()
+
+        alias = ''
+        if self.configObj.getValue('transform_alias_attr'):
+            alias = dataObj.getSingle(self.configObj.getValue('transform_alias_attr'))
+
+        if not alias:
+            alias = dataObj.getSingle('givenname') + "." + dataObj.getSingle("sn")
+            alias = alias.lower()
 
         # Build CN for the entry from givenname and sn ---
         if dataObj.hasAttr('cn') and not self.configObj.hasAttr('sambasiduserbase'):
@@ -91,6 +108,12 @@ class EntryManager(object):
                 attrs[rdnattr] =  dataObj.getSingle(rdnattr)
             elif self.configObj.getValue('override_rdn'):
                 attrs[rdnattr] = alias
+                uid_cn_value = alias
+                glo.debugOut("OVERRIED rdn: " + alias)
+
+
+        if self.configObj.getValue('upn_domain'):
+            attrs['userprincipalname'] =  alias+'@'+ self.configObj.getValue('upn_domain')
 
         if dataObj.hasAttr('userpassword'):
             attrs["userpassword"] = dataObj.getSingle("userpassword")
@@ -108,7 +131,9 @@ class EntryManager(object):
             if dataObj.hasAttr('class'):
                 attrs["description"] = dataObj.getSingle("class")
             else:
-                attrs["description"] = 'Inner circle'
+                pass
+                # This value could come from configuration ... not implemented yet
+                # attrs["description"] = 'HOPE International school user'
 
         if dataObj.hasAttr('mail'):
             attrs["mail"] = dataObj.getSingle("mail")
@@ -149,7 +174,7 @@ class EntryManager(object):
             attrs['sambantpassword'] = 'B3E331E65756DF5C0FA120F9A4CC793F'
 
 
-        print ("ATTRS: ", attrs)
+        print("ATTRS", attrs)
 
         return EntryData({'attrMap':attrs})
 
