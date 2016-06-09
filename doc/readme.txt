@@ -131,3 +131,12 @@ How to add a user via REST:
 curl -i -X POST http://localhost:8000/ldoper -d \
 ''{"config": {"mode":"add"},"data":[{"displayname": ["Test Staff214"], "description": ["HOPE circle"], "sn": ["Staff214"], "user_type": ["staff"], "userpassword": ["Hope1234"], "mail": ["test.staff214@hope.edu.kh"], "cn": ["test.staff214"], "givenname": ["Test"], "uid": ["test.staff214"]}]}''
 
+---------------------
+Interactive HTML client with web browser:
+
+file:///.../court7/html/ldoper.html
+
+Contains the under the hood JSON / REST calls with a browser.
+Two input / output sections ... one can be used to fetch the data, the other to add entries to AD/LDAP.
+
+
